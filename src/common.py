@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+"""Shared project utilities for paths, settings, and text normalization."""
+
 import os
 import unicodedata
 from pathlib import Path
@@ -14,6 +16,7 @@ REPORTS_DIR = OUTPUTS_DIR / "reports"
 SQL_DIR = ROOT_DIR / "sql"
 
 
+# Country aliases keep joins stable across sources that name the same country differently.
 COUNTRY_ALIASES = {
     "usa": "united states",
     "u.s.a": "united states",
@@ -29,11 +32,13 @@ COUNTRY_ALIASES = {
 
 
 def ensure_directories() -> None:
+    # The pipeline writes multiple artifacts, so the output folders must always exist.
     PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
     REPORTS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def normalize_text(value: str) -> str:
+    # Normalize text to ASCII and lowercase to make comparisons and joins more reliable.
     if value is None:
         return ""
     normalized = unicodedata.normalize("NFKD", str(value))
@@ -42,11 +47,13 @@ def normalize_text(value: str) -> str:
 
 
 def normalize_country(country: str) -> str:
+    # Apply aliases after text normalization to reduce key fragmentation.
     norm = normalize_text(country)
     return COUNTRY_ALIASES.get(norm, norm)
 
 
 def load_settings() -> dict:
+    # Keep all runtime settings in one place so scripts stay environment-driven.
     load_dotenv(ROOT_DIR / ".env")
     return {
         "pg_host": os.getenv("PG_HOST", "localhost"),

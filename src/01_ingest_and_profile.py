@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+"""Load the raw sales CSV, clean basic fields, and generate a data-quality report."""
+
 import json
 
 import pandas as pd
@@ -10,24 +12,30 @@ from common import DOCS_DIR, PROCESSED_DIR, REPORTS_DIR, ensure_directories, nor
 def main() -> None:
     ensure_directories()
 
+    # Load the raw source exactly once, then standardize columns for the rest of the pipeline.
     sales_path = DOCS_DIR / "sales_data_sample.csv"
     df = pd.read_csv(sales_path, encoding="latin1")
     df.columns = [c.strip().lower() for c in df.columns]
 
+    # Convert dates and numeric fields early so quality checks operate on usable types.
     df["orderdate"] = pd.to_datetime(df["orderdate"], errors="coerce")
     numeric_cols = ["quantityordered", "priceeach", "sales", "msrp"]
     for col in numeric_cols:
         df[col] = pd.to_numeric(df[col], errors="coerce")
 
+    # Trim text columns to remove hidden spaces that can break joins and validations.
     for col in ["status", "productline", "productcode", "country", "territory", "dealsize"]:
         df[col] = df[col].astype(str).str.strip()
 
+    # Create a normalized country key so later integrations can match across datasets.
     df["country_normalized"] = df["country"].map(normalize_country)
 
+    # Basic profiling helps document data quality before the transformation stage.
     duplicate_rows = int(df.duplicated().sum())
     nulls = df.isna().sum().to_dict()
     invalid_dates = int(df["orderdate"].isna().sum())
 
+    # Compare the reported sales against the implied arithmetic sales to detect inconsistencies.
     expected_sales = (df["quantityordered"] * df["priceeach"]).round(2)
     sales_diff = (df["sales"] - expected_sales).abs()
     inconsistent_sales_rows = int((sales_diff > 0.05).sum())
@@ -59,6 +67,7 @@ def main() -> None:
         "date_max": str(df["orderdate"].max()),
     }
 
+    # Persist the cleaned dataset so downstream scripts never have to repeat this work.
     cleaned_path = PROCESSED_DIR / "sales_cleaned.csv"
     df.to_csv(cleaned_path, index=False)
 

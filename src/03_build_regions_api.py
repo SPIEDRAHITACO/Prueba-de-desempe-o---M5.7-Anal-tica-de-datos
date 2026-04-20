@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+"""Build the geography dimension from the RestCountries API."""
+
 import requests
 import pandas as pd
 
@@ -12,6 +14,7 @@ RESTCOUNTRIES_URLS = [
 
 
 def _fetch_countries() -> list[dict]:
+    # Try a field-restricted endpoint first to reduce payload size, then fall back if needed.
     headers = {"User-Agent": "emausoft-analytics-pipeline/1.0"}
     last_error = None
 
@@ -29,10 +32,12 @@ def _fetch_countries() -> list[dict]:
 def main() -> None:
     ensure_directories()
 
+    # Geography metadata enriches the sales facts with continent and region context.
     countries = _fetch_countries()
 
     rows = []
     for item in countries:
+        # Normalize the country name so it can match the sales source consistently.
         name_common = item.get("name", {}).get("common", "")
         continents = item.get("continents") or []
         latlng = item.get("latlng") or [None, None]
@@ -52,6 +57,7 @@ def main() -> None:
         )
 
     regions = pd.DataFrame(rows).drop_duplicates(subset=["pais_normalizado"]).reset_index(drop=True)
+    # Save the deduplicated geography dimension source for downstream joins.
     output = PROCESSED_DIR / "regions.csv"
     regions.to_csv(output, index=False)
 

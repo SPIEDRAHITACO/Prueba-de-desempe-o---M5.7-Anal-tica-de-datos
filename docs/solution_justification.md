@@ -1,3 +1,5 @@
+<!-- Technical rationale for the solution architecture, modeling choices, and validation strategy. -->
+
 # Solution Justification
 
 ## Problem Assessment

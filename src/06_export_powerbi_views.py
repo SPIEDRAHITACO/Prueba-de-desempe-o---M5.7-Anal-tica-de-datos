@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+"""Export PostgreSQL analytical views to CSV files for Power BI consumption."""
+
 import pandas as pd
 from sqlalchemy import create_engine
 
@@ -29,6 +31,7 @@ def main() -> None:
     engine = create_engine(_build_connection_url(settings))
 
     for view_name, output_name in VIEWS_TO_EXPORT.items():
+        # Export each reporting view to a flat file so Power BI can use it without SQL access.
         query = f"SELECT * FROM {view_name};"
         frame = pd.read_sql(query, engine)
         output_path = PROCESSED_DIR / output_name

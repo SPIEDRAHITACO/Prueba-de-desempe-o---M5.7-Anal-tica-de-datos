@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+"""Build the customer dimension from the RandomUser API."""
+
 import requests
 import pandas as pd
 
@@ -11,12 +13,14 @@ RANDOMUSER_URL = "https://randomuser.me/api/?results=100&nat=us,gb,fr,es,de,au,c
 def main() -> None:
     ensure_directories()
 
+    # This API provides realistic but synthetic customer identities for the fact table.
     response = requests.get(RANDOMUSER_URL, timeout=30)
     response.raise_for_status()
     payload = response.json()
 
     rows = []
     for idx, user in enumerate(payload.get("results", []), start=1):
+        # Keep the customer structure simple and stable for relational loading.
         first = user.get("name", {}).get("first", "")
         last = user.get("name", {}).get("last", "")
         city = user.get("location", {}).get("city", "")
@@ -32,6 +36,7 @@ def main() -> None:
         )
 
     customers = pd.DataFrame(rows)
+    # Store the output as a dimension table source for the integration step.
     output = PROCESSED_DIR / "customers.csv"
     customers.to_csv(output, index=False)
 

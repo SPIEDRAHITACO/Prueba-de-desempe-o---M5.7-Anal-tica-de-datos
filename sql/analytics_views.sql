@@ -1,22 +1,26 @@
+-- Analytical views aligned to the business questions used in Power BI.
+-- These views keep the dashboard layer simple and reusable.
+
 CREATE OR REPLACE VIEW vw_sales_trend_monthly AS
 SELECT
-    DATE_TRUNC('month', orderdate) AS month_start,
-    SUM(sales) AS total_sales,
-    COUNT(DISTINCT ordernumber) AS total_orders
-FROM fact_ventas
-GROUP BY 1
-ORDER BY 1;
-
-CREATE OR REPLACE VIEW vw_sales_by_region AS
-SELECT
-    p.continente,
-    p.region,
-    f.country_normalized,
+    df.year,
+    df.month,
     SUM(f.sales) AS total_sales,
     COUNT(DISTINCT f.ordernumber) AS total_orders
 FROM fact_ventas f
-LEFT JOIN dim_paises p
-    ON f.country_normalized = p.pais_normalizado
+INNER JOIN dim_fecha df ON f.fecha_id = df.fecha_id
+GROUP BY 1, 2
+ORDER BY 1, 2;
+
+CREATE OR REPLACE VIEW vw_sales_by_region AS
+SELECT
+    dg.continente,
+    dg.region,
+    dg.pais_oficial,
+    SUM(f.sales) AS total_sales,
+    COUNT(DISTINCT f.ordernumber) AS total_orders
+FROM fact_ventas f
+INNER JOIN dim_geografia dg ON f.geografia_id = dg.geografia_id
 GROUP BY 1, 2, 3
 ORDER BY total_sales DESC;
 
@@ -29,8 +33,7 @@ SELECT
     SUM(f.quantityordered) AS total_units,
     COUNT(DISTINCT f.ordernumber) AS total_orders
 FROM fact_ventas f
-INNER JOIN dim_productos d
-    ON f.producto_id = d.producto_id
+INNER JOIN dim_productos d ON f.producto_id = d.producto_id
 GROUP BY 1, 2, 3
 ORDER BY total_sales DESC;
 
@@ -54,20 +57,18 @@ SELECT
         ELSE 'Low Value'
     END AS value_segment
 FROM fact_ventas f
-INNER JOIN dim_clientes c
-    ON f.cliente_id = c.cliente_id
+INNER JOIN dim_clientes c ON f.cliente_id = c.cliente_id
 GROUP BY 1, 2, 3;
 
 CREATE OR REPLACE VIEW vw_geo_behavior AS
 SELECT
-    p.continente,
-    p.region,
-    f.country_normalized,
+    dg.continente,
+    dg.region,
+    dg.pais_oficial,
     AVG(f.sales) AS avg_line_sale,
     AVG(f.quantityordered) AS avg_units,
     AVG(f.priceeach) AS avg_price,
     COUNT(DISTINCT f.ordernumber) AS total_orders
 FROM fact_ventas f
-LEFT JOIN dim_paises p
-    ON f.country_normalized = p.pais_normalizado
+INNER JOIN dim_geografia dg ON f.geografia_id = dg.geografia_id
 GROUP BY 1, 2, 3;
