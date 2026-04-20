@@ -1,0 +1,8 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+.ipynb_checkpoints/
+outputs/processed/*.csv
+outputs/reports/*.json
+outputs/reports/*.md
