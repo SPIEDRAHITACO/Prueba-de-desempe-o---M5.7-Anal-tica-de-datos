@@ -6,3 +6,6 @@ __pycache__/
 outputs/processed/*.csv
 outputs/reports/*.json
 outputs/reports/*.md
+docs/*
+!docs/sales_data_sample.csv
+!docs/Simulacro.pbix
